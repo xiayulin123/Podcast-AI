@@ -4,20 +4,63 @@ import { Label } from './ui/label'
 import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
 import { Loader } from 'lucide-react'
+import { useAction, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import {v4 as uuidv4} from 'uuid'
+import { generateUploadUrl } from '@/convex/files'
+import {useUploadFiles} from '@xixixao/uploadstuff/react'
+import { useToast } from '@/hooks/use-toast'
 
 const useGeneratePodcast = ({
   setAudio, voicePrompt, voiceType, setAudioStorageId
 }: GeneratePodcastProps) => {
   const [isGenerating, setisGenerating] = useState(false)
+  const { toast } = useToast()
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+  const { startUpload } = useUploadFiles(generateUploadUrl)
+  const getPodcastAudio = useAction(api.openai.generatedAudioAction)
+  const getAudioUrl = useMutation(api.podcasts.gerUrl)
   // Logic for podcast Generation
   const generatePodcast = async () => {
     setisGenerating(true)
     setAudio('')
-  }
- 
-  if (!voicePrompt) {
-    // todo: show error
-    return setisGenerating(false);
+
+    if (!voicePrompt) {
+      toast({
+        title: "Please provide the voice type"
+      })
+      return setisGenerating(false);
+    }
+    try {
+      const response = await getPodcastAudio({
+        voice: voiceType,
+        input: voicePrompt,
+      })
+
+      const blob = new Blob([response], {type: 'audio/mpeg'})
+      const fileName = `podcast-${uuidv4()}.mp3`
+
+      const file = new File([blob], fileName, { type: `audio/mpeg`})
+
+      const uploaded = await startUpload([file])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const storageId = (uploaded[0].response as any).storageId
+
+      setAudioStorageId(storageId)
+
+      const audioUrl = await getAudioUrl({ storageId })
+      setAudio(audioUrl!)
+
+      setisGenerating(false);
+
+    } catch (error) {
+      console.log("ERROR GENERATING PODCAST: ", error)
+      toast({
+        title: "Error generating the podcast",
+        variant: "destructive"
+      })
+      setisGenerating(false)
+    }
   }
 
   return {
