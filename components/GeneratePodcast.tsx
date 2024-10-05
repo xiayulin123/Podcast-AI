@@ -7,7 +7,6 @@ import { Loader } from 'lucide-react'
 import { useAction, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import {v4 as uuidv4} from 'uuid'
-import { generateUploadUrl } from '@/convex/files'
 import {useUploadFiles} from '@xixixao/uploadstuff/react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -52,7 +51,9 @@ const useGeneratePodcast = ({
       setAudio(audioUrl!)
 
       setisGenerating(false);
-
+      toast({
+        title: "Generated successfully"
+      })
     } catch (error) {
       console.log("ERROR GENERATING PODCAST: ", error)
       toast({
@@ -71,7 +72,7 @@ const useGeneratePodcast = ({
 
 const GeneratePodcast = (props
  : GeneratePodcastProps) => {
-  const {isGenerating, GeneratePodcast} = useGeneratePodcast(props);
+  const {isGenerating, generatePodcast} = useGeneratePodcast(props);
 
   return (
     <div>
@@ -88,18 +89,19 @@ const GeneratePodcast = (props
         />
       </div>
       <div className='mt-5 w-full max-w-[200px]'>
-      <Button type="submit" className="text-16 bg-orange-1 py-4 font-bold text-white-1">
-                  {isGenerating ? (
-                    <>
-                      Generating
-                      <Loader size={20} className="animate-spin ml-3" />
+      <Button type="submit" className="text-16 bg-orange-1 py-4 font-bold text-white-1"
+      onClick={generatePodcast}>
+        {isGenerating ? (
+          <>
+            Generating
+            <Loader size={20} className="animate-spin ml-3" />
 
-                    </>
+          </>
 
-                  ) : (
-                    "Generate"
-                  )}
-                </Button>
+        ) : (
+          "Generate"
+        )}
+      </Button>
       </div>
       {props.audio && (
         <audio controls src={props.audio} className="mt-5" 
