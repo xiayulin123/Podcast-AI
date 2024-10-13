@@ -31,6 +31,10 @@ import GeneratePodcast from "@/components/GeneratePodcast"
 import { Button } from "@/components/ui/button"
 import { Loader } from "lucide-react"
 import { Id } from "@/convex/_generated/dataModel"
+import { toast, useToast } from "@/hooks/use-toast"
+import { useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
   podcastTitle: z.string().min(2),
@@ -40,7 +44,8 @@ const formSchema = z.object({
 const VoiceCategory = ['alloy', 'shimmer', 'nova','fable' , 'onyx'];
 
 const CreatePodcast = () => {
-  const [isSubmitting, setIsSubmitting] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter()
 
   const [imagePrompt, setImagePrompt] = useState('')
   const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | null> (null)
@@ -53,6 +58,9 @@ const CreatePodcast = () => {
   const [voiceType, setVoiceType] = useState<string | null>(null)
   const [voicePrompt, setVoicePrompt] = useState('')
 
+  const CreatePodcast = useMutation(api.podcasts.createPodcast)
+
+  const {toast } = useToast()
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,8 +70,41 @@ const CreatePodcast = () => {
     },
   })
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    try {
+      setIsSubmitting(true)
+      if(!audioUrl || !imageUrl || !voiceType) {
+        toast({
+          title: "please generate audio and image",
+        })
+        setIsSubmitting(false)
+        throw new Error("please generate audio and image")
+      }
+      const podcast = await CreatePodcast({
+        podcastTitle: data.podcastTitle,
+        podcastDescription: data.podcastDescription,
+        audioUrl,
+        imageUrl,
+        voiceType,
+        imagePrompt,
+        voicePrompt,
+        views: 0,
+        audioDuration,
+        audioStorageId: audioStorageId!,
+        imageStorageId: imageStorageId!,
+      })
+      toast({ title: 'Podcast created' })
+      setIsSubmitting(false);
+      router.push("/")
+
+    } catch (error) {
+      console.log(error)
+      toast({
+        title: "ERROR",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+    }
   }
 
 
