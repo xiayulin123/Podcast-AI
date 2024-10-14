@@ -10,6 +10,11 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'exuberant-antelope-265.convex.cloud'
 
+            },
+            {
+                protocol: 'https',
+                hostname: 'img.clerk.com'
+
             }
         ]
     }
